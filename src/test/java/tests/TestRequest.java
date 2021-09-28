@@ -1,11 +1,11 @@
 package tests;
 
-import io.restassured.response.Response;
-import jdk.nashorn.internal.ir.annotations.Ignore;
+import io.restassured.specification.RequestSpecification;
 import model.Category;
 import model.Pet;
 import org.junit.jupiter.api.*;
 import model.Tag;
+import utilsAPI.APISpecification;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -15,13 +15,14 @@ import static endpoints.EndPoint.PET;
 import static io.restassured.RestAssured.given;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchema;
 import static org.hamcrest.Matchers.equalTo;
-import static tests.BeforeRequest.requestSpecification;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class TestRequest {
 
-    private static File jsonSchema = new File("src/test/resources/json_schema/petSchema.json");
+    private final static RequestSpecification REQUEST_SPECIFICATION
+            = APISpecification.getRequestSpecification();
+    private final static File JSON_SCHEMA = new File("src/test/resources/json_schema/petSchema.json");
 
     Tag tag = new Tag(1123545, "cat");
     Category category = new Category(1123545, "cat");
@@ -33,14 +34,15 @@ public class TestRequest {
 
     @Test
     @Order(2)
-    @Ignore
+    @Disabled
     public void getPetTest() {
         given()
-                .spec(requestSpecification)
+                .spec(REQUEST_SPECIFICATION)
                 .when()
                 .get(PET + pet.getId())
                 .prettyPeek()
                 .then()
+                .assertThat()
                 .body("name", equalTo("cat"));
 
     }
@@ -50,13 +52,13 @@ public class TestRequest {
     public void postPetTest() {
 
         given()
-                .spec(requestSpecification)
+                .spec(REQUEST_SPECIFICATION)
                 .when()
                 .body(pet)
                 .post(PET)
                 .then()
                 .assertThat()
-                .body(matchesJsonSchema(jsonSchema));
+                .body(matchesJsonSchema(JSON_SCHEMA));
 
     }
 
@@ -65,12 +67,13 @@ public class TestRequest {
     public void putPetTest() {
 
         given()
-                .spec(requestSpecification)
+                .spec(REQUEST_SPECIFICATION)
                 .when()
                 .body(updatedPet)
                 .put(PET)
                 .prettyPeek()
                 .then()
+                .assertThat()
                 .body("status", equalTo("sold"));
 
     }
@@ -78,14 +81,14 @@ public class TestRequest {
     @Test
     @Order(4)
     public void deletePetTest() {
-        Response response = given()
-                .spec(requestSpecification)
+        given()
+                .spec(REQUEST_SPECIFICATION)
                 .when()
                 .body(pet)
-                .delete(PET + pet.getId());
-
-        Assertions.assertEquals(200, response.statusCode());
-
+                .delete(PET + pet.getId())
+                .then()
+                .assertThat()
+                .statusCode(200);
     }
 
 }
